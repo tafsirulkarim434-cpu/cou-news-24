@@ -42,11 +42,11 @@ SITES = [
         "title_selector": "h2,h3",
         "link_selector": "a",
     },
-    {
-    "name": "Soddo Songbad",
-    "url": "https://soddosongbad.com",
-    "search_url": "https://soddosongbad.com/?s={query}",
-    "article_selector": "article,.post,.news-item",
+{
+    "name": "Daily Sokaler Somoy",
+    "url": "https://dailysokalersomoy.com",
+    "search_url": "https://dailysokalersomoy.com/?s={query}",
+    "article_selector": "article,.post,.news-item,.td-module-container",
     "title_selector": "h2,h3,h4",
     "link_selector": "a",
 },
