@@ -35,15 +35,6 @@ SITES = [
         "link_selector":    "a",
     },
     {
-        "name": "BD Telegraph 24",
-        "url":  "https://bdtelegraph24.com",
-        "search_url": "https://bdtelegraph24.com/?s={query}",
-        "article_selector": "article,.post,.news-item",
-        "title_selector":   "h2,h3,h4",
-        "link_selector":    "a",
-    },
-    
-    {
         "name": "Dhaka Diary",
         "url": "https://thedhakadiary.com",
         "search_url": "https://thedhakadiary.com/?s={query}",
