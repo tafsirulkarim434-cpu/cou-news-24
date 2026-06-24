@@ -51,6 +51,14 @@ SITES = [
         "title_selector": "h2,h3",
         "link_selector": "a",
     },
+    {
+        "name": "RisingBD",
+        "url": "https://www.risingbd.com",
+        "search_url": "https://www.risingbd.com/search?q={query}",
+        "article_selector": "article,.news-item,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
 ]
 
 SEARCH_QUERIES = [
