@@ -5,12 +5,12 @@ import hashlib
 import requests
 import schedule
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 BOT_TOKEN   = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
-CHANNEL_ID  = os.environ.get("CHANNEL_ID", "@your_channel")   # বা numeric id: -1001234567890
-CHECK_EVERY = 3   # মিনিট পর পর চেক করবে
+CHANNEL_ID  = os.environ.get("CHANNEL_ID", "@your_channel")
+CHECK_EVERY = 3
 
 KEYWORDS = [
     "কুমিল্লা বিশ্ববিদ্যালয়", "কুবি", "কু.বি",
@@ -35,33 +35,31 @@ SITES = [
         "link_selector":    "a",
     },
     {
-        "name": "Dhaka Diary",
-        "url": "https://thedhakadiary.com",
-        "search_url": "https://thedhakadiary.com/?s={query}",
-        "article_selector": "article,.post",
-        "title_selector": "h2,h3",
+        "name": "BD Telegraph 24",
+        "url":  "https://bdtelegraph24.com",
+        "search_url": "https://bdtelegraph24.com/?s={query}",
+        "article_selector": "article,.post,.news-item",
+        "title_selector":   "h2,h3,h4",
+        "link_selector":    "a",
+    },
+    {
+        "name": "Daily Sokaler Somoy",
+        "url": "https://dailysokalersomoy.com",
+        "search_url": "https://dailysokalersomoy.com/?s={query}",
+        "article_selector": "article,.post,.news-item,.td-module-container",
+        "title_selector": "h2,h3,h4",
         "link_selector": "a",
     },
-{
-    "name": "Daily Sokaler Somoy",
-    "url": "https://dailysokalersomoy.com",
-    "search_url": "https://dailysokalersomoy.com/?s={query}",
-    "article_selector": "article,.post,.news-item,.td-module-container",
-    "title_selector": "h2,h3,h4",
-    "link_selector": "a",
-},
 ]
 
 SEARCH_QUERIES = [
     "কুমিল্লা+বিশ্ববিদ্যালয়",
-    
-
-
-  "কুবি",
+    "কুবি",
     "comilla+university",
 ]
 
 SENT_FILE = "sent_articles.json"
+START_TIME = datetime.now()  # বট কখন চালু হয়েছে
 
 HEADERS = {
     "User-Agent": (
@@ -87,11 +85,42 @@ def make_id(url: str) -> str:
     return hashlib.md5(url.encode()).hexdigest()
 
 def is_relevant(title: str) -> bool:
-    title_lower = title.lower()
-    for kw in KEYWORDS:
-        if kw.lower() in title_lower:
-            return True
-    return False
+    return any(kw.lower() in title.lower() for kw in KEYWORDS)
+
+def is_first_run() -> bool:
+    """sent_articles.json না থাকলে এটা প্রথম রান"""
+    return not os.path.exists(SENT_FILE)
+
+def get_article_date(url: str) -> datetime | None:
+    """আর্টিকেলের ভেতরে গিয়ে published date বের করার চেষ্টা"""
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        # meta tag চেক (সবচেয়ে reliable)
+        for meta in soup.find_all("meta"):
+            prop = meta.get("property", "") + meta.get("name", "")
+            if "published_time" in prop or "date" in prop.lower():
+                content = meta.get("content", "")
+                if content:
+                    try:
+                        return datetime.fromisoformat(content[:19])
+                    except:
+                        pass
+
+        # time ট্যাগ চেক
+        time_tag = soup.find("time")
+        if time_tag:
+            dt = time_tag.get("datetime", "")
+            if dt:
+                try:
+                    return datetime.fromisoformat(dt[:19])
+                except:
+                    pass
+
+    except:
+        pass
+    return None  # তারিখ না পেলে None
 
 def send_telegram(text: str):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -120,17 +149,14 @@ def scrape_site(site: dict, query: str) -> list[dict]:
 
         articles = soup.select(site["article_selector"])
         if not articles:
-            # fallback: try common containers
             articles = soup.select(".td-module-container, .jeg_post, .post, article")
 
         for art in articles[:10]:
-            # find title
             t_el = art.select_one(site["title_selector"])
             if not t_el:
                 continue
             title = t_el.get_text(strip=True)
 
-            # find link
             a_el = t_el.find("a") or art.select_one("a[href]")
             if not a_el:
                 continue
@@ -147,15 +173,23 @@ def scrape_site(site: dict, query: str) -> list[dict]:
 
 # ─── MAIN CHECK ────────────────────────────────────────────────────────────────
 
-def check_news():
+def check_news(first_run: bool = False):
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] নিউজ চেক শুরু হচ্ছে...")
     sent = load_sent()
     new_count = 0
+    cutoff = datetime.now() - timedelta(hours=24)
+
+    if first_run:
+        send_telegram(
+            "✅ <b>কুবি নিউজ বট চালু হয়েছে!</b>\n"
+            f"🕐 গত ২৪ ঘন্টার নিউজ খোঁজা হচ্ছে...\n"
+            f"প্রতি {CHECK_EVERY} মিনিটে নতুন নিউজ চেক করবে।"
+        )
 
     for site in SITES:
         for query in SEARCH_QUERIES:
             items = scrape_site(site, query)
-           
+
             for item in items:
                 uid = make_id(item["url"])
                 if uid in sent:
@@ -163,31 +197,42 @@ def check_news():
                 if not is_relevant(item["title"]):
                     continue
 
-                # নতুন নিউজ পাওয়া গেছে!
+                # প্রথম রানে তারিখ চেক করবে
+                if first_run:
+                    pub_date = get_article_date(item["url"])
+                    if pub_date and pub_date < cutoff:
+                        # ২৪ ঘন্টার পুরনো — skip
+                        sent.add(uid)  # পরে যেন আর না আসে
+                        continue
+                    label = "🕐 <i>গত ২৪ ঘন্টা</i>"
+                else:
+                    label = "🔴 <b>সর্বশেষ</b>"
+
                 msg = (
-                    f"🔴 <b>কুমিল্লা বিশ্ববিদ্যালয় আপডেট</b>\n\n"
-                    f"📰 {item['title']}\n\n"
+                    f"{label}\n\n"
+                    f"📰 <b>{item['title']}</b>\n\n"
                     f"🌐 সূত্র: {item['source']}\n"
                     f"🔗 <a href=\"{item['url']}\">পুরো খবর পড়ুন</a>"
                 )
                 send_telegram(msg)
                 sent.add(uid)
                 new_count += 1
-                time.sleep(2)   # rate limit
+                time.sleep(2)
 
     save_sent(sent)
+
+    if first_run and new_count == 0:
+        send_telegram("ℹ️ গত ২৪ ঘন্টায় কুমিল্লা বিশ্ববিদ্যালয় সম্পর্কিত কোনো নিউজ পাওয়া যায়নি।")
+
     print(f"✅ চেক শেষ। নতুন নিউজ: {new_count}টি")
 
 # ─── RUN ───────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     print("🤖 কুবি নিউজ বট চালু হচ্ছে...")
-    send_telegram(
-        "✅ <b>কুবি নিউজ বট চালু হয়েছে!</b>\n"
-        f"প্রতি {CHECK_EVERY} মিনিটে নিউজ চেক করবে।"
-    )
-    check_news()   # প্রথমবার তাৎক্ষণিক রান
-    schedule.every(CHECK_EVERY).minutes.do(check_news)
+    first = is_first_run()
+    check_news(first_run=first)
+    schedule.every(CHECK_EVERY).minutes.do(check_news, first_run=False)
     while True:
         schedule.run_pending()
         time.sleep(30)
