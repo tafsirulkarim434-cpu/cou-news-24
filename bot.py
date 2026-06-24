@@ -42,10 +42,62 @@ SITES = [
         "title_selector":   "h2,h3,h4",
         "link_selector":    "a",
     },
+    # 🔥 নতুনগুলো যোগ করা হলো
+    {
+        "name": "Bangla Tribune",
+        "url": "https://www.banglatribune.com",
+        "search_url": "https://www.banglatribune.com/search?query={query}",
+        "article_selector": "article,.story,.news-item",
+        "title_selector": "h1,h2,h3",
+        "link_selector": "a",
+    },
+    {
+        "name": "RisingBD",
+        "url": "https://www.risingbd.com",
+        "search_url": "https://www.risingbd.com/search?q={query}",
+        "article_selector": "article,.news-item,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
+    {
+        "name": "Channel 24",
+        "url": "https://www.channel24bd.tv",
+        "search_url": "https://www.channel24bd.tv/search?q={query}",
+        "article_selector": "article,.news,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
+    {
+        "name": "The Daily Campus",
+        "url": "https://www.thedailycampus.com",
+        "search_url": "https://www.thedailycampus.com/search?q={query}",
+        "article_selector": "article,.news-item,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
+    {
+        "name": "Dhaka Diary",
+        "url": "https://thedhakadiary.com",
+        "search_url": "https://thedhakadiary.com/?s={query}",
+        "article_selector": "article,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
+    {
+        "name": "Tafsirul Karim Blog",
+        "url": "https://tafsirulkarim.blogspot.com",
+        "search_url": "https://tafsirulkarim.blogspot.com/search?q={query}",
+        "article_selector": "article,div.post,div.entry",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
 ]
 
 SEARCH_QUERIES = [
     "কুমিল্লা+বিশ্ববিদ্যালয়",
+    " কুতুবদিয়া",
+
+    ”তফসিরুল+করিম",
     "কুবি",
     "comilla+university",
 ]
