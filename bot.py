@@ -59,6 +59,14 @@ SITES = [
         "title_selector": "h2,h3",
         "link_selector": "a",
     },
+    {
+        "name": "Bangla Tribune",
+        "url": "https://www.banglatribune.com",
+        "search_url": "https://www.banglatribune.com/search?query={query}",
+        "article_selector": "article,.story,.news-item",
+        "title_selector": "h1,h2,h3",
+        "link_selector": "a",
+    },
 ]
 
 SEARCH_QUERIES = [
