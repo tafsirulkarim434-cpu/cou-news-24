@@ -83,6 +83,14 @@ SITES = [
         "title_selector": "h2,h3",
         "link_selector": "a",
     },
+    {
+    "name": "Soddo Songbad",
+    "url": "https://soddosongbad.com",
+    "search_url": "https://soddosongbad.com/?s={query}",
+    "article_selector": "article,.post,.news-item",
+    "title_selector": "h2,h3,h4",
+    "link_selector": "a",
+},
 ]
 
 SEARCH_QUERIES = [
