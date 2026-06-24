@@ -67,6 +67,14 @@ SITES = [
         "title_selector": "h1,h2,h3",
         "link_selector": "a",
     },
+    {
+        "name": "The Daily Campus",
+        "url": "https://www.thedailycampus.com",
+        "search_url": "https://www.thedailycampus.com/search?q={query}",
+        "article_selector": "article,.news-item,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
 ]
 
 SEARCH_QUERIES = [
