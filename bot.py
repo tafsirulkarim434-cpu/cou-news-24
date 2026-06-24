@@ -171,7 +171,7 @@ def check_news():
     for site in SITES:
         for query in SEARCH_QUERIES:
             items = scrape_site(site, query)
-           print(f"[DEBUG] {site['name']} | {query} | Found: {len(items)}")
+           
             for item in items:
                 uid = make_id(item["url"])
                 if uid in sent:
