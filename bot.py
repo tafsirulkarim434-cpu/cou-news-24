@@ -75,6 +75,14 @@ SITES = [
         "title_selector": "h2,h3",
         "link_selector": "a",
     },
+    {
+        "name": "Dhaka Diary",
+        "url": "https://thedhakadiary.com",
+        "search_url": "https://thedhakadiary.com/?s={query}",
+        "article_selector": "article,.post",
+        "title_selector": "h2,h3",
+        "link_selector": "a",
+    },
 ]
 
 SEARCH_QUERIES = [
