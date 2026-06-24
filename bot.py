@@ -10,7 +10,7 @@ from datetime import datetime
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 BOT_TOKEN   = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 CHANNEL_ID  = os.environ.get("CHANNEL_ID", "@your_channel")   # বা numeric id: -1001234567890
-CHECK_EVERY = 15   # মিনিট পর পর চেক করবে
+CHECK_EVERY = 1   # মিনিট পর পর চেক করবে
 
 KEYWORDS = [
     "কুমিল্লা বিশ্ববিদ্যালয়", "কুবি", "কু.বি",
