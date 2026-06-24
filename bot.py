@@ -42,7 +42,6 @@ SITES = [
         "title_selector":   "h2,h3,h4",
         "link_selector":    "a",
     },
-
     {
         "name": "Tafsirul Karim Blog",
         "url": "https://tafsirulkarim.blogspot.com",
@@ -50,10 +49,7 @@ SITES = [
         "article_selector": "article,div.post,div.entry",
         "title_selector": "h2,h3",
         "link_selector": "a",
-    },
-    
-    
-
+   },    
     {
         "name": "Dhaka Diary",
         "url": "https://thedhakadiary.com",
