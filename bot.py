@@ -231,13 +231,39 @@ def check_news(first_run: bool = False):
 
     # ── ১. সাধারণ সাইট scrape ─────────────────────────────────────────────────
     for site in SCRAPE_SITES:
+    if "gonokantho" in site["url"]:
+        # গণকন্ঠ একবারই scrape হবে, query loop নেই
+        items = scrape_site(site, "")
+        # নিচের processing একবারই করো
+        for item in items:
+            uid = make_id(item["url"])
+            if uid in sent or not is_relevant(item["title"]):
+                continue
+            if first_run:
+                pub_date = get_article_date(item["url"])
+                if pub_date and pub_date < cutoff:
+                    sent.add(uid)
+                    continue
+                label = "🕐 <i>গত ২৪ ঘন্টা</i>"
+            else:
+                label = "🔴 <b>সর্বশেষ</b>"
+            msg = (
+                f"{label}\n\n"
+                f"📰 <b>{item['title']}</b>\n\n"
+                f"🌐 সূত্র: {item['source']}\n"
+                f"🔗 <a href=\"{item['url']}\">পুরো খবর পড়ুন</a>"
+            )
+            send_telegram(msg)
+            sent.add(uid)
+            new_count += 1
+            time.sleep(2)
+    else:
         for query in SEARCH_QUERIES:
             items = scrape_site(site, query)
             for item in items:
                 uid = make_id(item["url"])
                 if uid in sent or not is_relevant(item["title"]):
                     continue
-
                 if first_run:
                     pub_date = get_article_date(item["url"])
                     if pub_date and pub_date < cutoff:
@@ -246,7 +272,6 @@ def check_news(first_run: bool = False):
                     label = "🕐 <i>গত ২৪ ঘন্টা</i>"
                 else:
                     label = "🔴 <b>সর্বশেষ</b>"
-
                 msg = (
                     f"{label}\n\n"
                     f"📰 <b>{item['title']}</b>\n\n"
