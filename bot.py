@@ -5,7 +5,6 @@ import hashlib
 import requests
 import schedule
 import feedparser
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
@@ -13,52 +12,22 @@ BOT_TOKEN   = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 CHANNEL_ID  = os.environ.get("CHANNEL_ID", "@your_channel")
 CHECK_EVERY = 3  # মিনিট
 
-KEYWORDS = [
-    "কুমিল্লা বিশ্ববিদ্যালয়", "কুবি", "কু.বি",
-    "comilla university", "cu student", "cu campus",
-]
-
-# ─── সাধারণ সাইট (BeautifulSoup দিয়ে scrape হবে) ─────────────────────────────
-SCRAPE_SITES = [
-    {
-        "name": "NewsvisionBD",
-        "url":  "https://newsvisionbd.com",
-        "search_url": "https://newsvisionbd.com/?s={query}",
-        "article_selector": "article",
-        "title_selector":   "h2,h3",
-    },
-{
-        "name": "Daily Gonokantho",
-        "url":  "https://dailygonokantho.com",
-        "search_url": "https://dailygonokantho.com/categories/srwsesh",  # সর্বশেষ পেজ
-        "article_selector": "a[href*='/article/']",  # /article/ দিয়ে সব লিংক
-        "title_selector":   "a[href*='/article/']",
-    },
-    {
-        "name": "BD Telegraph 24",
-        "url":  "https://bdtelegraph24.com",
-        "search_url": "https://bdtelegraph24.com/?s={query}",
-        "article_selector": "article,.post,.news-item",
-        "title_selector":   "h2,h3,h4",
-    },
-]
-
-# ─── RSS সাইট (feedparser দিয়ে চলবে) ─────────────────────────────────────────
-RSS_SITES = [
-    {
-        "name": "Daily Sokaler Somoy",
-        "url":  "https://dailysokalersomoy.com",
-        "rss_candidates": [
-            "https://dailysokalersomoy.com/feed/",
-            "https://dailysokalersomoy.com/rss/",
-            "https://dailysokalersomoy.com/feed/rss/",
-        ],
-    },
-]
-
+# Google News RSS — প্রতিটা keyword আলাদা আলাদা সার্চ হবে
 SEARCH_QUERIES = [
-    "কুমিল্লা+বিশ্ববিদ্যালয়",
-    "কুবি", "comilla+university",
+    "কুমিল্লা বিশ্ববিদ্যালয়",
+    "কুবি",
+    "comilla university",
+]
+
+# শুধু এই সাইটগুলোর নিউজ রাখবে (খালি রাখলে সব সাইট থেকে আসবে)
+ALLOWED_SOURCES = [
+    "dailygonokantho.com",
+    "newsvisionbd.com",
+    "soddosongbad.com",
+    "banglatribune.com",
+    "bartabazer.com",
+    "bdtelegraph24.com",
+    "dailysokalersomoy.com",
 ]
 
 SENT_FILE = "sent_articles.json"
@@ -86,14 +55,16 @@ def save_sent(sent: set):
 def make_id(url: str) -> str:
     return hashlib.md5(url.encode()).hexdigest()
 
-def is_relevant(title: str) -> bool:
-    return any(kw.lower() in title.lower() for kw in KEYWORDS)
-
 def is_first_run() -> bool:
     return not os.path.exists(SENT_FILE)
 
+def is_allowed_source(url: str) -> bool:
+    if not ALLOWED_SOURCES:
+        return True
+    return any(source in url for source in ALLOWED_SOURCES)
+
 def send_telegram(text: str):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id":    CHANNEL_ID,
         "text":       text,
@@ -101,116 +72,74 @@ def send_telegram(text: str):
         "disable_web_page_preview": False,
     }
     try:
-        r = requests.post(url, json=payload, timeout=10)
+        r = requests.post(api_url, json=payload, timeout=10)
         if not r.ok:
             print(f"[TG ERROR] {r.status_code}: {r.text}")
     except Exception as e:
         print(f"[TG EXCEPTION] {e}")
 
-def get_article_date(url: str) -> datetime | None:
-    """আর্টিকেলের published date বের করার চেষ্টা"""
+def get_source_name(url: str) -> str:
+    """URL থেকে সাইটের নাম বের করবে"""
+    clean = url.replace("https://", "").replace("http://", "").replace("www.", "")
+    domain = clean.split("/")[0]
+    names = {
+        "dailygonokantho.com": "দৈনিক গণকন্ঠ",
+        "newsvisionbd.com": "News Vision BD",
+        "soddosongbad.com": "সদ্য সংবাদ",
+        "banglatribune.com": "বাংলা ট্রিবিউন",
+        "bartabazer.com": "বার্তা বাজার",
+        "bdtelegraph24.com": "BD Telegraph 24",
+        "dailysokalersomoy.com": "দৈনিক সকালের সময়",
+    }
+    return names.get(domain, domain)
+
+# ─── GOOGLE NEWS RSS ────────────────────────────────────────────────────────────
+
+def fetch_google_news(query: str) -> list:
+    results = []
+    rss_url = (
+        f"https://news.google.com/rss/search"
+        f"?q={requests.utils.quote(query)}"
+        f"&hl=bn&gl=BD&ceid=BD:bn"
+    )
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
+        feed = feedparser.parse(rss_url)
+        if not feed.entries:
+            print(f"[GNEWS] কোনো রেজাল্ট নেই: {query}")
+            return []
 
-        # meta tag চেক
-        for meta in soup.find_all("meta"):
-            prop = meta.get("property", "") + meta.get("name", "")
-            if "published_time" in prop or "date" in prop.lower():
-                content = meta.get("content", "")
-                if content:
-                    try:
-                        return datetime.fromisoformat(content[:19])
-                    except:
-                        pass
+        print(f"[GNEWS] '{query}' → {len(feed.entries)}টি রেজাল্ট")
 
-        # time ট্যাগ চেক
-        time_tag = soup.find("time")
-        if time_tag:
-            dt = time_tag.get("datetime", "")
-            if dt:
+        for entry in feed.entries:
+            title = entry.get("title", "").strip()
+            link  = entry.get("link", "").strip()
+
+            # Google News redirect link থেকে actual URL বের করা
+            if "news.google.com" in link:
                 try:
-                    return datetime.fromisoformat(dt[:19])
+                    r = requests.get(link, headers=HEADERS, timeout=10, allow_redirects=True)
+                    link = r.url
                 except:
                     pass
-    except:
-        pass
-    return None
 
-# ─── SCRAPERS ──────────────────────────────────────────────────────────────────
+            # published date
+            pub_date = None
+            if hasattr(entry, "published_parsed") and entry.published_parsed:
+                try:
+                    pub_date = datetime(*entry.published_parsed[:6])
+                except:
+                    pass
 
-def scrape_site(site: dict, query: str) -> list[dict]:
-    """BeautifulSoup দিয়ে সাধারণ সাইট scrape করবে"""
-    results = []
-    search_url = site["search_url"].format(query=query)
-    try:
-        r = requests.get(search_url, headers=HEADERS, timeout=15)
-        r.raise_for_status()
-        soup = BeautifulSoup(r.text, "html.parser")
-
-        articles = soup.select(site["article_selector"])
-        if not articles:
-            articles = soup.select(".td-module-container, .jeg_post, .post, article")
-
-        for art in articles[:10]:
-            t_el = art.select_one(site["title_selector"])
-            if not t_el:
-                continue
-            title = t_el.get_text(strip=True)
-
-            a_el = t_el.find("a") or art.select_one("a[href]")
-            if not a_el:
-                continue
-            href = a_el.get("href", "")
-            if not href.startswith("http"):
-                href = site["url"].rstrip("/") + "/" + href.lstrip("/")
-
-            results.append({"title": title, "url": href, "source": site["name"]})
+            if title and link:
+                results.append({
+                    "title":    title,
+                    "url":      link,
+                    "source":   get_source_name(link),
+                    "pub_date": pub_date,
+                })
 
     except Exception as e:
-        print(f"[SCRAPE ERROR] {site['name']} | {query} → {e}")
-
-    return results
-
-
-def scrape_rss(site: dict) -> list[dict]:
-    """RSS feed দিয়ে Next.js সাইট থেকে নিউজ আনবে"""
-    results = []
-    for rss_url in site["rss_candidates"]:
-        try:
-            feed = feedparser.parse(rss_url)
-            if not feed.entries:
-                continue
-
-            print(f"[RSS OK] {site['name']} → {rss_url} ({len(feed.entries)} entries)")
-
-            for entry in feed.entries[:30]:
-                title = entry.get("title", "").strip()
-                link  = entry.get("link", "").strip()
-
-                # RSS থেকে published date বের করার চেষ্টা
-                pub_date = None
-                if hasattr(entry, "published_parsed") and entry.published_parsed:
-                    try:
-                        pub_date = datetime(*entry.published_parsed[:6])
-                    except:
-                        pass
-
-                if title and link:
-                    results.append({
-                        "title":    title,
-                        "url":      link,
-                        "source":   site["name"],
-                        "pub_date": pub_date,
-                    })
-            break  # একটা কাজ করলেই থামবে
-
-        except Exception as e:
-            print(f"[RSS ERROR] {site['name']} | {rss_url} → {e}")
-            continue
-
-    if not results:
-        print(f"[RSS FAIL] {site['name']} — কোনো feed কাজ করেনি")
+        print(f"[GNEWS ERROR] {query} → {e}")
 
     return results
 
@@ -218,9 +147,9 @@ def scrape_rss(site: dict) -> list[dict]:
 
 def check_news(first_run: bool = False):
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] নিউজ চেক শুরু হচ্ছে...")
-    sent     = load_sent()
+    sent = load_sent()
     new_count = 0
-    cutoff   = datetime.now() - timedelta(hours=24)
+    cutoff = datetime.now() - timedelta(hours=24)
 
     if first_run:
         send_telegram(
@@ -229,70 +158,22 @@ def check_news(first_run: bool = False):
             f"প্রতি {CHECK_EVERY} মিনিটে নতুন নিউজ চেক করবে।"
         )
 
-    # ── ১. সাধারণ সাইট scrape ─────────────────────────────────────────────────
-    for site in SCRAPE_SITES:
-        for query in SEARCH_QUERIES:
-            items = scrape_site(site, query)
-            for item in items:
-                uid = make_id(item["url"])
-                if uid in sent or not is_relevant(item["title"]):
-                    continue
+    for query in SEARCH_QUERIES:
+        items = fetch_google_news(query)
 
-                if first_run:
-                    pub_date = get_article_date(item["url"])
-                    if pub_date and pub_date < cutoff:
-                        sent.add(uid)
-                        continue
-                    label = "🕐 <i>গত ২৪ ঘন্টা</i>"
-                else:
-                    label = "🔴 <b>সর্বশেষ</b>"
-
-                msg = (
-                    f"{label}\n\n"
-                    f"📰 <b>{item['title']}</b>\n\n"
-                    f"🌐 সূত্র: {item['source']}\n"
-                    f"🔗 <a href=\"{item['url']}\">পুরো খবর পড়ুন</a>"
-                )
-                send_telegram(msg)
-                sent.add(uid)
-                new_count += 1
-                time.sleep(2)
-    else:
-        for query in SEARCH_QUERIES:
-            items = scrape_site(site, query)
-            for item in items:
-                uid = make_id(item["url"])
-                if uid in sent or not is_relevant(item["title"]):
-                    continue
-                if first_run:
-                    pub_date = get_article_date(item["url"])
-                    if pub_date and pub_date < cutoff:
-                        sent.add(uid)
-                        continue
-                    label = "🕐 <i>গত ২৪ ঘন্টা</i>"
-                else:
-                    label = "🔴 <b>সর্বশেষ</b>"
-                msg = (
-                    f"{label}\n\n"
-                    f"📰 <b>{item['title']}</b>\n\n"
-                    f"🌐 সূত্র: {item['source']}\n"
-                    f"🔗 <a href=\"{item['url']}\">পুরো খবর পড়ুন</a>"
-                )
-                send_telegram(msg)
-                sent.add(uid)
-                new_count += 1
-                time.sleep(2)
-
-    # ── ২. RSS সাইট (Daily Sokaler Somoy ইত্যাদি) ────────────────────────────
-    for site in RSS_SITES:
-        items = scrape_rss(site)
         for item in items:
             uid = make_id(item["url"])
-            if uid in sent or not is_relevant(item["title"]):
+
+            # already sent চেক
+            if uid in sent:
                 continue
 
+            # allowed source চেক
+            if not is_allowed_source(item["url"]):
+                continue
+
+            # প্রথম রানে ২৪ ঘন্টার বাইরে হলে skip
             if first_run:
-                # RSS-এ pub_date সরাসরি আছে — get_article_date() লাগবে না
                 pub_date = item.get("pub_date")
                 if pub_date and pub_date < cutoff:
                     sent.add(uid)
