@@ -73,14 +73,14 @@ SITES = [
         "https://ovijatra.com/feed/",
     ],
 },
-    {
-        "name": "সদ্য সংবাদ",
-        "type": "rss",
-        "rss_urls": [
-            "https://soddosongbad.com/feed/",
-            "https://soddosongbad.com/rss/",
-        ],
-    },
+{
+    "name": "সদ্য সংবাদ",
+    "type": "scrape",
+    "urls": [
+        "https://www.soddosongbad.com/campus",
+    ],
+    "link_pattern": "/campus/",
+},
     {
         "name": "বার্তা বাজার",
         "type": "rss",
