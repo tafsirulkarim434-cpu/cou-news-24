@@ -57,6 +57,16 @@ SITES = [
         "link_pattern": "/my-campus/",
     },
     {
+    "name": "চ্যানেল ২৪",
+    "type": "scrape",
+    "urls": [
+        "https://www.channel24bd.tv/education",
+        "https://www.channel24bd.tv/channel24-campus",
+        "https://www.channel24bd.tv/search?q=%E0%A6%95%E0%A7%81%E0%A6%AE%E0%A6%BF%E0%A6%B2%E0%A7%8D%E0%A6%B2%E0%A6%BE+%E0%A6%AC%E0%A6%BF%E0%A6%B6%E0%A7%8D%E0%A6%AC%E0%A6%AC%E0%A6%BF%E0%A6%A6%E0%A7%8D%E0%A6%AF%E0%A6%BE%E0%A6%B2%E0%A7%9F",
+    ],
+    "link_pattern": "/article/",
+},
+    {
     "name": "অভিযাত্রা",
     "type": "rss",
     "rss_urls": [
