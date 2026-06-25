@@ -27,12 +27,12 @@ SCRAPE_SITES = [
         "article_selector": "article",
         "title_selector":   "h2,h3",
     },
-    {
+{
         "name": "Daily Gonokantho",
         "url":  "https://dailygonokantho.com",
-        "search_url": "https://dailygonokantho.com/?s={query}",
-        "article_selector": "article,.post,.news-item",
-        "title_selector":   "h2,h3,h4",
+        "search_url": "https://dailygonokantho.com/categories/srwsesh",  # সর্বশেষ পেজ
+        "article_selector": "a[href*='/article/']",  # /article/ দিয়ে সব লিংক
+        "title_selector":   "a[href*='/article/']",
     },
     {
         "name": "BD Telegraph 24",
@@ -58,8 +58,7 @@ RSS_SITES = [
 
 SEARCH_QUERIES = [
     "কুমিল্লা+বিশ্ববিদ্যালয়",
-    "কুবি",
-    "comilla+university",
+    "কুবি", " "কুবির",  "comilla+university",
 ]
 
 SENT_FILE = "sent_articles.json"
