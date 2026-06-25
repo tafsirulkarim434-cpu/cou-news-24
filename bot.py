@@ -58,7 +58,7 @@ RSS_SITES = [
 
 SEARCH_QUERIES = [
     "কুমিল্লা+বিশ্ববিদ্যালয়",
-    "কুবি", " "কুবির",  "comilla+university",
+    "কুবি", "comilla+university",
 ]
 
 SENT_FILE = "sent_articles.json"
