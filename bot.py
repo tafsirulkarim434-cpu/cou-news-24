@@ -57,6 +57,13 @@ SITES = [
         "link_pattern": "/my-campus/",
     },
     {
+    "name": "অভিযাত্রা",
+    "type": "rss",
+    "rss_urls": [
+        "https://ovijatra.com/feed/",
+    ],
+},
+    {
         "name": "সদ্য সংবাদ",
         "type": "rss",
         "rss_urls": [
