@@ -99,6 +99,15 @@ SITES = [
         "link_pattern": None,
     },
     {
+    "name": "The Dhaka Diary",
+    "type": "scrape",
+    "urls": [
+        "https://thedhakadiary.com/campus",
+        "https://thedhakadiary.com/education",
+    ],
+    "link_pattern": "/news/",
+},
+    {
         "name": "দৈনিক সকালের সময়",
         "type": "rss",
         "rss_urls": [
