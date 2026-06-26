@@ -108,6 +108,15 @@ SITES = [
     "link_pattern": "/news/",
 },
     {
+    "name": "রাইজিংবিডি",
+    "type": "scrape",
+    "urls": [
+        "https://www.risingbd.com/campus/comilla-university",
+        "https://www.risingbd.com/campus",
+    ],
+    "link_pattern": "/campus/",
+},
+    {
         "name": "দৈনিক সকালের সময়",
         "type": "rss",
         "rss_urls": [
