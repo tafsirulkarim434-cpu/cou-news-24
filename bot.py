@@ -99,6 +99,15 @@ SITES = [
         "link_pattern": None,
     },
     {
+    "name": "BD Telegraph 24",
+    "type": "rss",
+    "rss_urls": [
+        "https://bdtelegraph24.com/feed/",
+        "https://bdtelegraph24.com/rss/",
+        "https://bdtelegraph24.com/feed/rss2/",
+    ],
+},
+    {
     "name": "The Dhaka Diary",
     "type": "scrape",
     "urls": [
@@ -106,15 +115,6 @@ SITES = [
         "https://thedhakadiary.com/education",
     ],
     "link_pattern": "/news/",
-},
-    {
-    "name": "রাইজিংবিডি",
-    "type": "scrape",
-    "urls": [
-        "https://www.risingbd.com/campus/comilla-university",
-        "https://www.risingbd.com/campus",
-    ],
-    "link_pattern": "/campus/",
 },
     {
         "name": "দৈনিক সকালের সময়",
